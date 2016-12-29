@@ -6,7 +6,7 @@ compiler:
 
 before_install:
   # CMake
-  - sudo add-apt-repository --yes ppa:george-edison55/precise-backports
+  - wget https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz
   # g++ 4.9
   - if [ "$CXX" == "g++" ]; then sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test; fi
   # clang 3.4
@@ -15,7 +15,9 @@ before_install:
 
 install:
   # CMake
-  - sudo apt-get install -qq cmake cmake-data
+  - sudo apt-get install build-essential
+  - tar xzf cmake-3.7.1.tar.gz
+  - "cd cmake-3.7.1 && ./configure && make && sudo make install ; cd -"
   # g++4.8
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.9; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
