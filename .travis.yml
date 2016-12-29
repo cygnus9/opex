@@ -21,14 +21,14 @@ install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
   # clang 3.4
   - if [ "$CXX" == "clang++" ]; then sudo apt-get install --allow-unauthenticated -qq clang-3.4; fi
-  - if [ "$CXX" == "clang++" ]; then export CXX="clang++-3.4"; fi
+  - if [ "$CXX" == "clang++" ]; then export CXX="clang++-3.4" CC="clang-3.4"; fi
   # GTest
   - sudo apt-get install -y libgtest-dev
-  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv libg* /usr/local/lib/ ; cd -"
+  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo cmake --build . install ; cd -"
 
 before_script: cmake .
 
 script:
   - $CXX --version
-  - make
-  - make test
+  - sudo cmake --build .
+  - sudo cmake --build . test
