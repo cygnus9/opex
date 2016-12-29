@@ -24,7 +24,7 @@ install:
   - if [ "$CXX" == "clang++" ]; then export CXX="clang++-3.4" CC="clang-3.4"; fi
   # GTest
   - sudo apt-get install -y libgtest-dev
-  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo cmake --build . --target install ; cd -"
+  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv -v libg* /usr/local/lib/ ; cd -"
 
 before_script: cmake .
 
