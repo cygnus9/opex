@@ -31,8 +31,8 @@ if(${GTEST_FOUND})
     )
     target_link_libraries(test_opex
         opex
-        ${GTEST_MAIN_LIBRARIES}
-        ${GTEST_LIBRARIES}
+        GTest::GTest
+        GTest::Main
     )
 
     enable_testing()
