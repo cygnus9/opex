@@ -6,7 +6,7 @@ compiler:
 
 before_install:
   # CMake
-  - wget https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz
+  - wget -q https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz
   # g++ 4.9
   - if [ "$CXX" == "g++" ]; then sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test; fi
   # clang 3.4
@@ -34,5 +34,5 @@ before_script:
 
 script:
   - $CXX --version
-  - sudo make VERBOSE=1
+  - sudo make
   - sudo make test
