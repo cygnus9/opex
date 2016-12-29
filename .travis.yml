@@ -11,7 +11,7 @@ before_install:
 
 install:
   # CMake
-  - sudo apt-get install -q cmake
+  - sudo apt-get install -q cmake cmake-data
   - sudo apt-get install -y libgtest-dev
 
 before_script: cmake CMakeLists.txt
