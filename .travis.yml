@@ -1,6 +1,5 @@
 language: cpp
-compiler: gcc
-
+compilercompile
 matrix:
   include:
     - os: linux
@@ -25,38 +24,20 @@ matrix:
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5.1']
+          packages: ['g++-6']
       env:
-        - C_CXX=g++-5.1
-        - C_CC=gcc-5.1
-
+        - C_CXX=g++-6
+        - C_CC=gcc-6
+        
     - os: linux
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5.2']
+          packages: ['g++-7']
       env:
-        - C_CXX=g++-5.2
-        - C_CC=gcc-5.2
-
-    - os: linux
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5.4']
-      env:
-        - C_CXX=g++-5.4
-        - C_CC=gcc-5.4
-
-    - os: linux
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-6.2']
-      env:
-        - C_CXX=g++-6.2
-        - C_CC=gcc-6.2
-
+        - C_CXX=g++-7
+        - C_CC=gcc-7
+        
     - os: linux
       addons:
         apt:
@@ -83,16 +64,7 @@ matrix:
       env:
         - C_CXX=clang++-3.8
         - C_CC=clang-3.8
-
-    - os: linux
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.9']
-          packages: ['clang-3.9']
-      env:
-        - C_CXX=clang++-3.9
-        - C_CC=clang-3.9
-
+        
 # Activate when we are allowed to use MacOS X
 #    - os: osx
 #      compiler: clang
