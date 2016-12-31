@@ -46,7 +46,16 @@ matrix:
       env:
         - C_CXX=clang++-3.6
         - C_CC=clang-3.6
-
+        
+    - os: linux
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
+          packages: ['clang-3.7']
+      env:
+        - C_CXX=clang++-3.7
+        - C_CC=clang-3.7
+        
     - os: linux
       addons:
         apt:
