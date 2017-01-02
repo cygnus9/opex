@@ -74,21 +74,20 @@ matrix:
 
 before_install:
   # CMake
-  - wget -q https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz
+  - wget -q https://cmake.org/files/v3.7/cmake-3.7.1-Linux-x86_64.tar.gz
   - sudo apt-get update -qq
 
 install:
   # CMake
   - sudo apt-get install build-essential
-  - tar xzf cmake-3.7.1.tar.gz
-  - "cd cmake-3.7.1 && ./configure && make && sudo make install ; cd -"
+  - tar xzf cmake-3.7.1-Linux-x86_64.tar.gz
   # GTest
   - sudo apt-get install -y libgtest-dev
   - "cd /usr/src/gtest && sudo cmake . && sudo make && sudo mv libg* /usr/local/lib/ ; cd -"
 
 before_script:
-  - CXX=$C_CXX CC=$C_CC cmake .
+  - CXX=$C_CXX CC=$C_CC cmake-3.7.1-Linux-x86_64/bin/cmake . -DCMAKE_BUILD_TYPE=Release
 
 script:
-  - sudo make
-  - sudo make test
+  - make
+  - make test
