@@ -1,3 +1,5 @@
+#include <functional>
+
 #include <gtest/gtest.h>
 #include <opex/opex.h>
 
