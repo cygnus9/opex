@@ -22,6 +22,7 @@ if(${GTEST_FOUND})
         test/test_call.cpp
         test/test_construct.cpp
         test/test_map.cpp
+        test/test_map_err.cpp
     )
     set_target_properties(test_opex PROPERTIES
         CXX_STANDARD 11
