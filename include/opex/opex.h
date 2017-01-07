@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 namespace opex {
     template<typename ValueType, typename BaseExceptionType = std::exception>
     class result {
