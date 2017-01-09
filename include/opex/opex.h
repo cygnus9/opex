@@ -4,9 +4,35 @@
 #include <type_traits>
 
 namespace opex {
+    namespace traits {
+        template<typename... Ts> struct make_void { typedef void type;};
+        template<typename... Ts> using void_t = typename make_void<Ts...>::type;
+    }
+
     template<typename ValueType, typename ExceptionType = std::exception>
     class result {
     public:
+        template <typename E>
+        struct is_valid_exception {
+            static constexpr bool value = std::is_base_of<ExceptionType, E>::value;
+        };
+
+        template <typename, typename, typename = traits::void_t<>>
+        struct rebind {};
+
+        template <typename F, typename V>
+        struct rebind<F, V, traits::void_t<typename std::result_of<F(V)>::type>> {
+            using type = result<typename std::result_of<F(V)>::type, ExceptionType>;
+        };
+
+        template <typename, typename, typename = traits::void_t<>>
+        struct rebind_err {};
+
+        template <typename F, typename E>
+        struct rebind_err<F, E, traits::void_t<typename std::result_of<F(E)>::type>> {
+            using type = result<ValueType, typename std::result_of<F(E)>::type>;
+        };
+
         ~result() {
             using exception_ptr = std::exception_ptr;
 
@@ -44,18 +70,14 @@ namespace opex {
         {}
 
         template<typename NewExceptionType,
-                 typename std::enable_if<
-                         std::is_base_of<ExceptionType, NewExceptionType>::value
-                 >::type* = nullptr>
+                 typename std::enable_if<is_valid_exception<NewExceptionType>::value>::type* = nullptr>
         static result from_exception(NewExceptionType &&exception) {
             return result{std::make_exception_ptr(std::forward<NewExceptionType>(exception))};
         };
 
         template<typename NewExceptionType,
                  typename... ArgTypes,
-                 typename std::enable_if<
-                         std::is_base_of<ExceptionType, NewExceptionType>::value
-                 >::type* = nullptr>
+                 typename std::enable_if<is_valid_exception<NewExceptionType>::value>::type* = nullptr>
         static result make_exception(ArgTypes... args) {
             return from_exception(NewExceptionType{std::forward<ArgTypes>(args)...});
         };
@@ -70,28 +92,28 @@ namespace opex {
         }
 
         template<typename Func,
-                 typename ResultType = result<typename std::result_of<Func(ValueType)>::type, ExceptionType>>
+                 typename ResultType = typename rebind<Func, const ValueType &>::type>
         ResultType map(Func &&func) const& {
             return is_ok() ? ResultType{func(m_value)}
                            : ResultType{m_exception};
         };
 
         template<typename Func,
-                 typename ResultType = result<typename std::result_of<Func(ValueType&&)>::type, ExceptionType>>
+                 typename ResultType = typename rebind<Func, ValueType &&>::type>
         ResultType map(Func &&func) && {
             return is_ok() ? ResultType{func(std::move(m_value))}
                            : ResultType{std::move(m_exception)};
         };
 
         template<typename Func,
-                 typename ResultType = result<ValueType, typename std::result_of<Func(const ExceptionType&)>::type>>
+                 typename ResultType = typename rebind_err<Func, const ExceptionType &>::type>
         ResultType map_err(Func &&func) const& {
             return is_ok() ? ResultType(m_value)
                            : ResultType::from_exception(err_visit(std::forward<Func>(func)));
         };
 
         template<typename Func,
-                 typename ResultType = result<ValueType, typename std::result_of<Func(ExceptionType&&)>::type>>
+                 typename ResultType = typename rebind_err<Func, ExceptionType &&>::type>
         ResultType map_err(Func &&func) && {
             return is_ok() ? ResultType(std::move(m_value))
                            : ResultType::from_exception(std::move(*this).err_visit(std::forward<Func>(func)));
