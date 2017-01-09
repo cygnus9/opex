@@ -1,8 +1,19 @@
 #pragma once
 
 #include <stdexcept>
+#include <type_traits>
 
 namespace opex {
+    namespace traits {
+        template <typename Func, typename... Arg>
+        struct result_of {
+            using type = decltype(std::declval<Func>()(std::declval<Arg>()...));
+        };
+
+        template <typename Func, typename... Arg>
+        using result_of_t = typename result_of<Func, Arg...>::type;
+    }
+
     template<typename ValueType, typename BaseExceptionType = std::exception>
     class result {
     public:
@@ -64,46 +75,57 @@ namespace opex {
             }
         }
 
-        template<typename Func, typename ResultType = result<decltype(std::declval<Func>()(std::declval<ValueType>())), BaseExceptionType>>
+        template<typename Func, typename ResultType = result<traits::result_of_t<Func, ValueType>, BaseExceptionType>>
         ResultType map(Func &&func) const& {
-            return m_type == Type::Value ? ResultType{func(m_value)}
-                                         : ResultType{m_exception};
+            return is_ok() ? ResultType{func(m_value)}
+                           : ResultType{m_exception};
         };
 
-        template<typename Func, typename ResultType = result<decltype(std::declval<Func>()(std::declval<ValueType&&>())), BaseExceptionType>>
+        template<typename Func, typename ResultType = result<traits::result_of_t<Func, ValueType&&>, BaseExceptionType>>
         ResultType map(Func &&func) && {
-            return m_type == Type::Value ? ResultType{func(std::move(m_value))}
-                                         : ResultType{std::move(m_exception)};
+            return is_ok() ? ResultType{func(std::move(m_value))}
+                           : ResultType{std::move(m_exception)};
         };
 
-        template<typename Func, typename ResultType = result<ValueType, decltype(std::declval<Func>()(std::declval<BaseExceptionType&>()))>>
+        template<typename Func, typename ResultType = result<ValueType, decltype(std::declval<Func>()(std::declval<const BaseExceptionType&>()))>>
         ResultType map_err(Func &&func) const& {
-            if (m_type == Type::Value)
-                return ResultType(m_value);
-
-            try {
-                std::rethrow_exception(m_exception);
-            } catch (const BaseExceptionType &exc) {
-                return ResultType::from_exception(func(exc));
-            }
-
-            throw std::logic_error("BUG: We failed to catch our exception...");
+            return is_ok() ? ResultType(m_value)
+                           : ResultType::from_exception(err_visit(std::forward<Func>(func)));
         };
 
         template<typename Func, typename ResultType = result<ValueType, decltype(std::declval<Func>()(std::declval<BaseExceptionType&&>()))>>
         ResultType map_err(Func &&func) && {
-            if (m_type == Type::Value)
-                return ResultType(std::move(m_value));
+            return is_ok() ? ResultType(std::move(m_value))
+                           : ResultType::from_exception(std::move(*this).err_visit(std::forward<Func>(func)));
+        };
+
+        template<typename Func>
+        auto err_visit(Func &&func) const& -> decltype(std::declval<Func>()(std::declval<const BaseExceptionType&>())) {
+            if (!is_err())
+                throw std::logic_error("err_visit can only be called on error'd instances");
+
+            try {
+                std::rethrow_exception(m_exception);
+            } catch (const BaseExceptionType &exc) {
+                return func(exc);
+            }
+
+            throw std::logic_error("BUG: We failed to catch our exception...");
+        }
+
+        template<typename Func>
+        auto err_visit(Func &&func) && -> decltype(std::declval<Func>()(std::declval<BaseExceptionType&&>())) {
+            if (!is_err())
+                throw std::logic_error("err_visit can only be called on error'd instances");
 
             try {
                 std::rethrow_exception(m_exception);
             } catch (BaseExceptionType &exc) {
-                return ResultType::from_exception(func(std::move(exc)));
+                return func(std::move(exc));
             }
 
             throw std::logic_error("BUG: We failed to catch our exception...");
-        };
-
+        }
 
         const ValueType& unwrap() const { throw_on_err(); return m_value; }
         ValueType& unwrap()             { throw_on_err(); return m_value; }
@@ -118,6 +140,17 @@ namespace opex {
 
         explicit operator bool() const noexcept { return is_ok(); }
         bool operator!() const noexcept         { return is_err(); }
+
+        std::string what() const noexcept {
+            try {
+                throw_on_err();
+                return {};
+            }
+            catch (const std::exception &e) { return e.what(); }
+            catch (const std::string &s) { return s; }
+            catch (const char *p) { return p; }
+            catch (...) { return {}; }
+        }
 
     private:
         explicit result(std::exception_ptr &&exception):
@@ -150,7 +183,7 @@ namespace opex {
 
 
     template <typename BaseExceptionType = std::exception, typename Func,
-            typename ValueType = decltype(std::declval<Func>()())>
+            typename ValueType = traits::result_of_t<Func>>
     result<ValueType, BaseExceptionType> call(Func &&func) {
         return result<ValueType, BaseExceptionType>::call(std::forward<Func>(func));
     };

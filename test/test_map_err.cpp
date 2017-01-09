@@ -46,7 +46,7 @@ TEST(MapErr, ValidRvalueResult)
     ASSERT_NO_THROW(result1.unwrap());
     const auto value = result1.unwrap();
 
-    const auto result2 = std::move(result1).map_err([](const std::exception &err) {
+    const auto result2 = std::move(result1).map_err([](std::exception err) {
         return gear::TestException{err.what()};
     });
     EXPECT_TRUE(result2.is_ok());
@@ -78,7 +78,7 @@ TEST(MapErr, InvalidRvalueResult)
     auto result1 = my_opex_enabled_function(true);
     EXPECT_TRUE(result1.is_err());
 
-    const auto result2 = std::move(result1).map_err([](const std::exception &err) {
+    const auto result2 = std::move(result1).map_err([](std::exception &&err) {
         return gear::TestException{err.what()};
     });
     EXPECT_TRUE(result2.is_err());
