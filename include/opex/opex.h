@@ -120,6 +120,14 @@ namespace opex {
                            : ResultType::from_exception(std::move(*this).err_visit(std::forward<Func>(func)));
         };
 
+        const result&  and_select(const result &other ) const& { return is_ok() ? other : *this; }
+              result&  and_select(      result &other ) &      { return is_ok() ? other : *this; }
+              result&& and_select(      result &&other) &&     { return is_ok() ? std::move(other) : std::move(*this); }
+
+        const result&  or_select(const result &other ) const& { return is_err() ? other : *this; }
+              result&  or_select(      result &other ) &      { return is_err() ? other : *this; }
+              result&& or_select(      result &&other) &&     { return is_err() ? std::move(other) : std::move(*this); }
+
         template<typename Func>
         auto err_visit(Func &&func) const& -> typename std::result_of<Func(const ExceptionType&)>::type {
             if (!is_err())
@@ -148,16 +156,18 @@ namespace opex {
             throw std::logic_error("BUG: We failed to catch our exception...");
         }
 
-        const ValueType& unwrap() const { throw_on_err(); return m_value; }
-        ValueType& unwrap()             { throw_on_err(); return m_value; }
+        const ValueType&  unwrap() const& { throw_on_err(); return m_value; }
+              ValueType&  unwrap() &      { throw_on_err(); return m_value; }
+              ValueType&& unwrap() &&     { throw_on_err(); return std::move(m_value); }
 
         bool is_ok() const noexcept  { return m_type == Type::Value; }
         bool is_err() const noexcept { return m_type == Type::Exception; }
 
         const ValueType* operator->() const { return &unwrap(); }
-        ValueType* operator->()             { return &unwrap(); }
-        const ValueType& operator*() const { return unwrap(); }
-        ValueType& operator*()             { return unwrap(); }
+              ValueType* operator->()       { return &unwrap(); }
+        const ValueType&  operator*() const& { return unwrap(); }
+              ValueType&  operator*() &      { return unwrap(); }
+              ValueType&& operator*() &&     { return std::move(*this).unwrap(); }
 
         explicit operator bool() const noexcept { return is_ok(); }
         bool operator!() const noexcept         { return is_err(); }

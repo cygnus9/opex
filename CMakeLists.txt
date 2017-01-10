@@ -19,10 +19,12 @@ if(${GTEST_FOUND})
     add_executable(test_opex
         test/gear.cpp
         test/test_accessors.cpp
+        test/test_and_select.cpp
         test/test_call.cpp
         test/test_construct.cpp
         test/test_map.cpp
         test/test_map_err.cpp
+        test/test_or_select.cpp
         test/test_what.cpp
     )
     set_target_properties(test_opex PROPERTIES

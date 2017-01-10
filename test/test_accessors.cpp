@@ -21,6 +21,15 @@ TEST(Accessors, ValidConstValue) {
     EXPECT_EQ(value.id(), result->id());
 }
 
+TEST(Accessors, ValidRValue) {
+    gear::TestType value;
+    gear::TestResult result{value};
+
+    EXPECT_EQ(value, std::move(result).unwrap());
+    EXPECT_EQ(value, *std::move(result));
+    EXPECT_EQ(value.id(), std::move(result)->id());
+}
+
 TEST(Accessors, InvalidValue) {
     auto result = gear::TestResult::make_exception<gear::TestException>("");
 
