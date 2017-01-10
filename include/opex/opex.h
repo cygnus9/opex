@@ -12,10 +12,11 @@ namespace opex {
     template<typename ValueType, typename ExceptionType = std::exception>
     class result {
     public:
+        template <typename E, bool = std::is_base_of<ExceptionType, E>::value>
+        struct is_allowed_exception : std::false_type {};
+
         template <typename E>
-        struct is_valid_exception {
-            static constexpr bool value = std::is_base_of<ExceptionType, E>::value;
-        };
+        struct is_allowed_exception<E, true> : std::true_type {};
 
         template <typename, typename, typename = traits::void_t<>>
         struct rebind {};
@@ -70,14 +71,14 @@ namespace opex {
         {}
 
         template<typename NewExceptionType,
-                 typename std::enable_if<is_valid_exception<NewExceptionType>::value>::type* = nullptr>
+                 typename std::enable_if<is_allowed_exception<NewExceptionType>::value>::type* = nullptr>
         static result from_exception(NewExceptionType &&exception) {
             return result{std::make_exception_ptr(std::forward<NewExceptionType>(exception))};
         };
 
         template<typename NewExceptionType,
                  typename... ArgTypes,
-                 typename std::enable_if<is_valid_exception<NewExceptionType>::value>::type* = nullptr>
+                 typename std::enable_if<is_allowed_exception<NewExceptionType>::value>::type* = nullptr>
         static result make_exception(ArgTypes... args) {
             return from_exception(NewExceptionType{std::forward<ArgTypes>(args)...});
         };
