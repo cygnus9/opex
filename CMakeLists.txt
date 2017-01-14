@@ -20,6 +20,7 @@ if(${GTEST_FOUND})
         test/gear.cpp
         test/test_accessors.cpp
         test/test_and_select.cpp
+        test/test_and_then.cpp
         test/test_call.cpp
         test/test_construct.cpp
         test/test_map.cpp

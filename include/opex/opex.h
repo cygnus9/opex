@@ -7,31 +7,51 @@ namespace opex {
     namespace traits {
         template<typename... Ts> struct make_void { typedef void type;};
         template<typename... Ts> using void_t = typename make_void<Ts...>::type;
+
+        template<typename>
+        struct is_result : public std::false_type {};
     }
 
     template<typename ValueType, typename ExceptionType = std::exception>
     class result {
     public:
+        using value_type = ValueType;
+        using exception_type = ExceptionType;
+
         template <typename E, bool = std::is_base_of<ExceptionType, E>::value>
         struct is_allowed_exception : std::false_type {};
 
         template <typename E>
         struct is_allowed_exception<E, true> : std::true_type {};
 
-        template <typename, typename, typename = traits::void_t<>>
+        template <typename, typename = traits::void_t<>>
         struct rebind {};
 
         template <typename F, typename V>
-        struct rebind<F, V, traits::void_t<typename std::result_of<F(V)>::type>> {
+        struct rebind<F(V), traits::void_t<typename std::result_of<F(V)>::type>> {
             using type = result<typename std::result_of<F(V)>::type, ExceptionType>;
         };
 
-        template <typename, typename, typename = traits::void_t<>>
+        template <typename, typename = traits::void_t<>>
         struct rebind_err {};
 
         template <typename F, typename E>
-        struct rebind_err<F, E, traits::void_t<typename std::result_of<F(E)>::type>> {
+        struct rebind_err<F(E), traits::void_t<typename std::result_of<F(E)>::type>> {
             using type = result<ValueType, typename std::result_of<F(E)>::type>;
+        };
+
+        template <typename, typename = traits::void_t<>>
+        struct compatible_result_of {};
+
+        template <typename F, typename Arg>
+        struct compatible_result_of<F(Arg), traits::void_t<typename std::enable_if<
+                traits::is_result<typename std::result_of<F(Arg)>::type>::value &&
+                std::is_base_of<typename std::result_of<F(Arg)>::type::exception_type, ExceptionType>::value>::type>> {
+            using type = typename std::enable_if<
+                    traits::is_result<typename std::result_of<F(Arg)>::type>::value &&
+                    std::is_base_of<typename std::result_of<F(Arg)>::type::exception_type, ExceptionType>::value,
+                    typename std::result_of<F(Arg)>::type
+            >::type;
         };
 
         ~result() {
@@ -93,28 +113,28 @@ namespace opex {
         }
 
         template<typename Func,
-                 typename ResultType = typename rebind<Func, const ValueType &>::type>
+                 typename ResultType = typename rebind<Func(const ValueType &)>::type>
         ResultType map(Func &&func) const& {
             return is_ok() ? ResultType{func(m_value)}
                            : ResultType{m_exception};
         };
 
         template<typename Func,
-                 typename ResultType = typename rebind<Func, ValueType &&>::type>
+                 typename ResultType = typename rebind<Func(ValueType &&)>::type>
         ResultType map(Func &&func) && {
             return is_ok() ? ResultType{func(std::move(m_value))}
                            : ResultType{std::move(m_exception)};
         };
 
         template<typename Func,
-                 typename ResultType = typename rebind_err<Func, const ExceptionType &>::type>
+                 typename ResultType = typename rebind_err<Func(const ExceptionType &)>::type>
         ResultType map_err(Func &&func) const& {
             return is_ok() ? ResultType(m_value)
                            : ResultType::from_exception(err_visit(std::forward<Func>(func)));
         };
 
         template<typename Func,
-                 typename ResultType = typename rebind_err<Func, ExceptionType &&>::type>
+                 typename ResultType = typename rebind_err<Func(ExceptionType &&)>::type>
         ResultType map_err(Func &&func) && {
             return is_ok() ? ResultType(std::move(m_value))
                            : ResultType::from_exception(std::move(*this).err_visit(std::forward<Func>(func)));
@@ -127,6 +147,22 @@ namespace opex {
         const result& or_select(const result &other ) const& { return is_err() ? other : *this; }
               result& or_select(      result &other ) &      { return is_err() ? other : *this; }
               result  or_select(      result &&other) &&     { return is_err() ? std::move(other) : std::move(*this); }
+
+        template<typename Func,
+                 typename ResultType = typename compatible_result_of<Func(const ValueType &)>::type>
+        ResultType and_then(Func &&func) const& {
+            return is_ok() ? func(m_value)
+                           : ResultType{m_exception};
+        };
+
+        template<typename Func,
+                typename ResultType = typename compatible_result_of<Func(ValueType &&)>::type>
+        ResultType and_then(Func &&func) && {
+            return is_ok() ? func(std::move(m_value))
+                           : ResultType{std::move(m_exception)};
+        };
+
+
 
         template<typename Func>
         auto err_visit(Func &&func) const& -> typename std::result_of<Func(const ExceptionType&)>::type {
@@ -211,6 +247,12 @@ namespace opex {
         template <typename T, typename E>
         friend class result;
     };
+
+
+    namespace traits {
+        template<typename T, typename E>
+        struct is_result<result<T, E>> : public std::true_type {};
+    }
 
 
     template<typename ExceptionType = std::exception, typename Func,
