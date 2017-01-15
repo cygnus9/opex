@@ -15,6 +15,9 @@ namespace {
     
     struct OtherType {
         gear::TestType nested;
+
+        OtherType(gear::TestType v): nested(std::move(v))
+        {}
     };
     using other_result_type = opex::result<OtherType, std::exception>;
     
