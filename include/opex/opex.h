@@ -3,6 +3,16 @@
 #include <stdexcept>
 #include <type_traits>
 
+
+#ifdef __has_cpp_attribute
+#  if __has_cpp_attribute(nodiscard)
+#    define NODISCARD [[nodiscard]]
+#  else
+#    define NODISCARD
+#  endif
+#endif
+
+
 namespace opex {
     namespace traits {
         template<typename... Ts> struct make_void { typedef void type;};
@@ -13,7 +23,7 @@ namespace opex {
     }
 
     template<typename ValueType, typename ExceptionType = std::exception>
-    class result {
+    class NODISCARD result {
     public:
         using value_type = ValueType;
         using exception_type = ExceptionType;
