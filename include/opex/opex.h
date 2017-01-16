@@ -5,7 +5,7 @@
 
 namespace opex {
     namespace traits {
-        template<typename... Ts> struct make_void { typedef void type;};
+        template<typename... Ts> struct make_void { using type = void; };
         template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
         template<typename>
@@ -36,8 +36,15 @@ namespace opex {
         struct rebind_err {};
 
         template <typename F, typename E>
-        struct rebind_err<F(E), traits::void_t<typename std::result_of<F(E)>::type>> {
+        struct rebind_err<F(E), traits::void_t<typename std::enable_if<
+                !traits::is_result<typename std::result_of<F(E)>::type>::value>::type>> {
             using type = result<ValueType, typename std::result_of<F(E)>::type>;
+        };
+
+        template <typename F, typename E>
+        struct rebind_err<F(E), traits::void_t<typename std::enable_if<
+                traits::is_result<typename std::result_of<F(E)>::type>::value>::type>> {
+            using type = result<ValueType, typename std::result_of<F(E)>::type::exception_type>;
         };
 
         template <typename, typename = traits::void_t<>>
@@ -162,7 +169,19 @@ namespace opex {
                            : ResultType{std::move(m_exception)};
         };
 
+        template<typename Func,
+                 typename ResultType = typename rebind_err<Func(const ExceptionType &)>::type>
+        ResultType or_else(Func &&func) const& {
+            return is_ok() ? ResultType(m_value)
+                           : err_visit(std::forward<Func>(func));
+        };
 
+        template<typename Func,
+                 typename ResultType = typename rebind_err<Func(ExceptionType &&)>::type>
+        ResultType or_else(Func &&func) && {
+            return is_ok() ? ResultType(std::move(m_value))
+                           : std::move(*this).err_visit(std::forward<Func>(func));
+        };
 
         template<typename Func>
         auto err_visit(Func &&func) const& -> typename std::result_of<Func(const ExceptionType&)>::type {

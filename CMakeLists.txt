@@ -25,6 +25,7 @@ if(${GTEST_FOUND})
         test/test_construct.cpp
         test/test_map.cpp
         test/test_map_err.cpp
+        test/test_or_else.cpp
         test/test_or_select.cpp
         test/test_what.cpp
     )
