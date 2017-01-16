@@ -7,9 +7,10 @@
 #ifdef __has_cpp_attribute
 #  if __has_cpp_attribute(nodiscard)
 #    define NODISCARD [[nodiscard]]
-#  else
-#    define NODISCARD
 #  endif
+#endif
+#ifndef NODISCARD
+#  define NODISCARD
 #endif
 
 
