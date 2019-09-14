@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+
+# Joe backup files
+*~
+
+# Build artifacts
+/build
+/Testing
